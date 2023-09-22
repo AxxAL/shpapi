@@ -62,5 +62,5 @@ export const createItem = zValidator("json", itemSchema, async (result, c) => {
     }
 
     const createdItem = await prisma.item.create({ data: item, include: { stock: true }});
-    return c.json(createdItem);
+    return c.json(createdItem, 200);
 });

@@ -8,9 +8,12 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { createItem, getAllItems, getItemById } from "./controllers/ItemController";
 
-const app = new Hono();
+export const config = {
+    secret: process.env.API_SECRET as string,
+    port: parseInt(process.env.API_PORT as string) || 8787
+};
 
-const apiSecret = process.env.API_SECRET as string;
+const app = new Hono();
 
 app.use("*", cors());
 app.use("*", prettyJSON());
@@ -20,9 +23,9 @@ app.use("/static/*", serveStatic({ root: "./" }));
 app.basePath("/item")
     .get("/all", getAllItems)
     .get("/:id", getItemById)
-    .post("/create", bearerAuth({ token: apiSecret }), createItem);
+    .post("/create", bearerAuth({ token: config.secret }), createItem);
 
 serve({
     fetch: app.fetch,
-    port: 8787,
+    port: config.port,
 }, info => console.log(`Started API on http://localhost:${info.port}`));
