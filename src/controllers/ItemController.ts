@@ -2,30 +2,33 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { Context } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { ServerExceptionType, serverException } from "../types/ServerException";
+import { HTTPException } from "hono/http-exception";
 
 const prisma = new PrismaClient();
 
-export async function getAllItems({ json }: Context) {
-    const items = await prisma.item.findMany();
+export async function getAllItems({ req, json }: Context) {
+    const includeStock = req.queries("stock");
+    const items = await prisma.item.findMany({
+        include: {
+            stock: includeStock != undefined
+        }
+    });
     return json(items, 200);
 }
 
 export async function getItemById({ req, json }: Context) {
     const id = parseInt(req.param("id"));
+    const includeStock = req.queries("stock");
         
-    if (isNaN(id)) return json(serverException(
-        ServerExceptionType.INPUT_ERROR,
-        "Please use only integers"
-    ), 401);
+    if (isNaN(id)) throw new HTTPException(400, { message: "Invalid item id" });
     const first = await prisma.item.findFirst({
-        where: { id }
+        where: { id },
+        include: {
+            stock: includeStock != undefined
+        }
     })
     .catch(() => {
-        return json(serverException(
-            ServerExceptionType.INPUT_ERROR,
-            "Could not find item with matching id."
-        ), 404);
+        throw new HTTPException(404, { message: "Could not find matching item" });
     });
 
     return json(first);
@@ -42,10 +45,7 @@ const itemSchema = z.object({
 
 export const createItem = zValidator("json", itemSchema, async (result, c) => {
     if (!result.success) {
-        return c.json(serverException(
-            ServerExceptionType.INPUT_ERROR,
-            "Invalid input"
-        ), 401);
+        throw new HTTPException(400, { message: "Invalid request" });
     }
 
     const item: Prisma.ItemCreateInput = {

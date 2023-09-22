@@ -15,6 +15,7 @@ model Item {
   title String
   price Int
   stock Stock?
+  image Image?
 }
 
 model Stock {
@@ -23,6 +24,16 @@ model Stock {
   large Int
   medium Int
   small Int
+  item Item @relation(fields: [itemId], references: [id])
+  itemId Int @unique
+}
+
+model Image {
+  id Int @id @unique @default(autoincrement())
+  fileName String
+  url String
+  fileSize String
+  mimeType String
   item Item @relation(fields: [itemId], references: [id])
   itemId Int @unique
 }
